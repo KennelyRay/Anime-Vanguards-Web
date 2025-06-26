@@ -55,7 +55,7 @@ const Navbar = () => {
   return (
     <>
       <motion.nav 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-500 ${
           scrolled 
             ? 'bg-dark-100/80 backdrop-blur-xl border-b border-primary-500/20 shadow-lg shadow-primary-500/10' 
             : 'bg-transparent'
@@ -211,7 +211,7 @@ const Navbar = () => {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed inset-0 z-40 lg:hidden"
+            className="fixed inset-0 z-30 lg:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

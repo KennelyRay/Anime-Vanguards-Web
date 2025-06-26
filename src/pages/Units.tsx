@@ -1,7 +1,7 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Search, Filter, Sword } from 'lucide-react'
-import UnitModal from '../components/UnitModal'
 import { UnitData } from '../data/unitsDatabase'
 import { useUnits } from '../contexts/UnitsContext'
 
@@ -36,8 +36,7 @@ const Units = () => {
   const [selectedTier, setSelectedTier] = useState('all')
   const [selectedElement, setSelectedElement] = useState('all')
   const [selectedRarity, setSelectedRarity] = useState('all')
-  const [selectedUnit, setSelectedUnit] = useState<UnitData | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
+
 
   // Element icon mapping based on the provided image
   const getElementIcon = (element: string) => {
@@ -58,15 +57,7 @@ const Units = () => {
     return elementStyles[element] || { icon: '/images/Elements/UnknownElement.webp', color: 'text-gray-400', bg: 'bg-gray-500/20' }
   }
 
-  const handleUnitClick = (unit: UnitData) => {
-    setSelectedUnit(unit)
-    setIsModalOpen(true)
-  }
 
-  const closeModal = () => {
-    setIsModalOpen(false)
-    setSelectedUnit(null)
-  }
 
   const filteredUnits = units.filter(unit => {
     // Only show base units (units with isBaseForm: true or no isBaseForm property for legacy units)
@@ -173,14 +164,13 @@ const Units = () => {
             {filteredUnits.map((unit, index) => {
               const elementStyle = getElementIcon(unit.element)
               return (
-                <motion.div
-                  key={index}
-                  className="card-glow p-6 group hover:scale-105 transition-transform duration-300 cursor-pointer"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
-                  onClick={() => handleUnitClick(unit)}
-                >
+                <Link to={`/units/${encodeURIComponent(unit.name)}`} key={index}>
+                  <motion.div
+                    className="card-glow p-6 group hover:scale-105 transition-transform duration-300 cursor-pointer"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                  >
                   <div className="aspect-square bg-gradient-to-br from-primary-500/20 to-secondary-500/20 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
                     {unit.image ? (
                       <img 
@@ -233,7 +223,8 @@ const Units = () => {
                       <span className={`rarity-${unit.rarity.toLowerCase()} text-sm`}>{unit.rarity}</span>
                     </div>
                   </div>
-                </motion.div>
+                  </motion.div>
+                </Link>
               )
             })}
           </motion.div>
@@ -247,14 +238,7 @@ const Units = () => {
           )}
         </motion.div>
       </div>
-      
-      {/* Unit Detail Modal */}
-      <UnitModal 
-        unit={selectedUnit} 
-        isOpen={isModalOpen} 
-        onClose={closeModal} 
-        onUnitSelect={handleUnitClick}
-      />
+
     </div>
   )
 }

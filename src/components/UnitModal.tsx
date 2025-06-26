@@ -149,14 +149,14 @@ const UnitModal: React.FC<UnitModalProps> = ({ unit, isOpen, onClose, onUnitSele
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[100] p-2 sm:p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
           >
             <motion.div
-              className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl rounded-3xl max-w-[95vw] w-full h-[95vh] overflow-hidden relative shadow-2xl border border-white/10 ring-1 ring-white/5"
+              className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl max-w-[98vw] sm:max-w-[95vw] w-full h-[98vh] sm:h-[95vh] md:h-[90vh] overflow-hidden relative shadow-2xl border border-white/10 ring-1 ring-white/5"
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -166,22 +166,22 @@ const UnitModal: React.FC<UnitModalProps> = ({ unit, isOpen, onClose, onUnitSele
               {/* Close Button */}
               <motion.button
                 onClick={onClose}
-                className="absolute top-8 right-8 p-3 hover:bg-red-500/20 rounded-2xl transition-all duration-300 group border border-white/10 hover:border-red-500/30 z-20 backdrop-blur-sm bg-black/20"
+                className="absolute top-4 right-4 sm:top-6 sm:right-6 md:top-8 md:right-8 p-2 sm:p-3 hover:bg-red-500/20 rounded-xl sm:rounded-2xl transition-all duration-300 group border border-white/10 hover:border-red-500/30 z-20 backdrop-blur-sm bg-black/20"
                 whileHover={{ scale: 1.05, rotate: 90 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <X className="h-6 w-6 text-white/70 group-hover:text-red-400 transition-colors" />
+                <X className="h-5 w-5 sm:h-6 sm:w-6 text-white/70 group-hover:text-red-400 transition-colors" />
               </motion.button>
 
-              {/* Main Landscape Layout */}
-              <div className="flex h-full">
-                {/* Left Panel - Unit Info & Image */}
-                <div className="w-96 p-8 border-r border-white/10 bg-gradient-to-br from-slate-800/50 to-slate-700/30 backdrop-blur-sm flex flex-col">
+              {/* Main Responsive Layout */}
+              <div className="flex flex-col lg:flex-row h-full">
+                {/* Top Panel (Mobile) / Left Panel (Desktop) - Unit Info & Image */}
+                <div className="w-full lg:w-96 p-4 sm:p-6 md:p-8 border-b lg:border-b-0 lg:border-r border-white/10 bg-gradient-to-br from-slate-800/50 to-slate-700/30 backdrop-blur-sm flex flex-col lg:max-h-full overflow-y-auto lg:overflow-visible">
                   {/* Unit Image */}
-                  <div className="flex justify-center mb-8">
+                  <div className="flex justify-center mb-4 sm:mb-6 lg:mb-8">
                     <div className="relative group">
                       <div 
-                        className={`w-48 h-48 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-2xl flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-500 backdrop-blur-sm border ${isShiny ? 'ring-4 ring-yellow-400/80 shadow-2xl shadow-yellow-400/30 border-yellow-400/20' : 'ring-2 ring-white/20 shadow-xl shadow-black/20 border-white/10'} group-hover:scale-105 group-hover:shadow-2xl`}
+                        className={`w-32 h-32 sm:w-40 sm:h-40 lg:w-48 lg:h-48 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-xl sm:rounded-2xl flex items-center justify-center overflow-hidden cursor-pointer transition-all duration-500 backdrop-blur-sm border ${isShiny ? 'ring-4 ring-yellow-400/80 shadow-2xl shadow-yellow-400/30 border-yellow-400/20' : 'ring-2 ring-white/20 shadow-xl shadow-black/20 border-white/10'} group-hover:scale-105 group-hover:shadow-2xl`}
                         onClick={() => currentImage && setIsImageEnlarged(true)}
                       >
                         {currentImage ? (
@@ -196,13 +196,13 @@ const UnitModal: React.FC<UnitModalProps> = ({ unit, isOpen, onClose, onUnitSele
                             }}
                           />
                         ) : null}
-                        <Sword className="h-16 w-16 text-primary-400" style={{ display: currentImage ? 'none' : 'block' }} />
+                        <Sword className="h-8 w-8 sm:h-12 sm:w-12 lg:h-16 lg:w-16 text-primary-400" style={{ display: currentImage ? 'none' : 'block' }} />
                       </div>
                       
                       {/* Shiny Toggle Button */}
                       {unit.shinyImage && (
                         <motion.button
-                          className={`absolute -bottom-3 -right-3 w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 border-2 ${
+                          className={`absolute -bottom-2 -right-2 sm:-bottom-3 sm:-right-3 w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 rounded-full flex items-center justify-center transition-all duration-300 border-2 ${
                             isShiny 
                               ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white shadow-xl shadow-yellow-500/60 border-yellow-300 ring-2 ring-yellow-300/50' 
                               : 'bg-gradient-to-r from-gray-600 to-gray-700 text-gray-300 hover:from-gray-500 hover:to-gray-600 border-gray-500 shadow-lg hover:shadow-yellow-400/30 hover:border-yellow-400/50'
@@ -213,7 +213,7 @@ const UnitModal: React.FC<UnitModalProps> = ({ unit, isOpen, onClose, onUnitSele
                           transition={{ duration: 0.3 }}
                           title={isShiny ? 'Switch to Normal' : 'Switch to Shiny'}
                         >
-                          <Sparkles className={`h-6 w-6 ${isShiny ? 'animate-pulse' : ''}`} />
+                          <Sparkles className={`h-3 w-3 sm:h-4 sm:w-4 lg:h-6 lg:w-6 ${isShiny ? 'animate-pulse' : ''}`} />
                           {isShiny && (
                             <motion.div
                               className="absolute inset-0 rounded-full bg-yellow-400"
@@ -229,7 +229,7 @@ const UnitModal: React.FC<UnitModalProps> = ({ unit, isOpen, onClose, onUnitSele
 
                   {/* Unit Name */}
                   <motion.h1 
-                    className="text-2xl font-game font-bold text-white mb-4 text-center"
+                    className="text-lg sm:text-xl lg:text-2xl font-game font-bold text-white mb-3 sm:mb-4 text-center"
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.1 }}
@@ -237,12 +237,12 @@ const UnitModal: React.FC<UnitModalProps> = ({ unit, isOpen, onClose, onUnitSele
                     {unit.name}
                     {isShiny && (
                       <motion.span 
-                        className="block text-yellow-400 text-sm mt-1 flex items-center justify-center gap-2 bg-yellow-500/20 px-3 py-1 rounded-full border border-yellow-400/30 mx-auto w-fit"
+                        className="block text-yellow-400 text-xs sm:text-sm mt-1 flex items-center justify-center gap-1 sm:gap-2 bg-yellow-500/20 px-2 sm:px-3 py-1 rounded-full border border-yellow-400/30 mx-auto w-fit"
                         initial={{ opacity: 0, scale: 0, rotate: -180 }}
                         animate={{ opacity: 1, scale: 1, rotate: 0 }}
                         transition={{ duration: 0.5, type: "spring" }}
                       >
-                        <Sparkles className="h-4 w-4 animate-pulse" />
+                        <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 animate-pulse" />
                         <span className="font-bold">SHINY</span>
                       </motion.span>
                     )}
@@ -250,56 +250,56 @@ const UnitModal: React.FC<UnitModalProps> = ({ unit, isOpen, onClose, onUnitSele
                   
                   {/* Unit Badges */}
                   <motion.div 
-                    className="space-y-3 mb-6"
+                    className="space-y-2 sm:space-y-3 mb-4 sm:mb-6"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
                   >
                     <motion.div 
-                      className={`w-full px-4 py-3 rounded-xl text-base font-bold border-2 shadow-2xl flex items-center justify-center gap-2 rarity-${unit.rarity.toLowerCase()}`}
+                      className={`w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-bold border-2 shadow-2xl flex items-center justify-center gap-2 rarity-${unit.rarity.toLowerCase()}`}
                       whileHover={{ scale: 1.02, y: -2 }}
                       transition={{ type: "spring", stiffness: 400, damping: 17 }}
                     >
-                      <Crown className="h-5 w-5" />
+                      <Crown className="h-4 w-4 sm:h-5 sm:w-5" />
                       <span className="tracking-wider">{unit.rarity}</span>
                       {unit.rarity === 'Mythical' && (
-                        <Sparkles className="h-5 w-5 animate-pulse" />
+                        <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 animate-pulse" />
                       )}
                     </motion.div>
                     
                     <motion.div 
-                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-dark-300/50 border border-white/10 shadow-lg"
+                      className="w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl bg-dark-300/50 border border-white/10 shadow-lg"
                       whileHover={{ scale: 1.02, y: -2 }}
                       transition={{ type: "spring", stiffness: 400, damping: 17 }}
                     >
                       <img 
                         src={getTierData(unit.tier).icon} 
                         alt={getTierData(unit.tier).label}
-                        className="w-5 h-5 object-contain"
+                        className="w-4 h-4 sm:w-5 sm:h-5 object-contain"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
                           target.nextElementSibling?.classList.remove('hidden');
                         }}
                       />
-                      <span className="text-base font-bold text-white">{getTierData(unit.tier).label}</span>
+                      <span className="text-sm sm:text-base font-bold text-white">{getTierData(unit.tier).label}</span>
                     </motion.div>
                     
                     <motion.div 
-                      className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl ${elementStyle.bg} border border-white/10 shadow-lg`}
+                      className={`w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl ${elementStyle.bg} border border-white/10 shadow-lg`}
                       whileHover={{ scale: 1.02, y: -2 }}
                       transition={{ type: "spring", stiffness: 400, damping: 17 }}
                     >
                       <img 
                         src={elementStyle.icon} 
                         alt={unit.element}
-                        className="w-5 h-5 object-contain"
+                        className="w-4 h-4 sm:w-5 sm:h-5 object-contain"
                         onError={(e) => {
                           const target = e.target as HTMLImageElement;
                           target.style.display = 'none';
                         }}
                       />
-                      <span className={`text-base font-bold ${elementStyle.color}`}>{unit.element}</span>
+                      <span className={`text-sm sm:text-base font-bold ${elementStyle.color}`}>{unit.element}</span>
                     </motion.div>
                   </motion.div>
 
@@ -319,8 +319,8 @@ const UnitModal: React.FC<UnitModalProps> = ({ unit, isOpen, onClose, onUnitSele
                   )}
                 </div>
 
-                {/* Right Panel - Content Sections */}
-                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent p-8 space-y-8">
+                {/* Bottom Panel (Mobile) / Right Panel (Desktop) - Content Sections */}
+                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6 lg:space-y-8">
                 
                 {/* Interactive Base Stats Section */}
                 <motion.section
@@ -328,11 +328,11 @@ const UnitModal: React.FC<UnitModalProps> = ({ unit, isOpen, onClose, onUnitSele
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="p-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl border border-blue-500/30">
-                      <TrendingUp className="h-6 w-6 text-blue-400" />
+                  <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6">
+                    <div className="p-1.5 sm:p-2 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-lg sm:rounded-xl border border-blue-500/30">
+                      <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 text-blue-400" />
                     </div>
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                    <h2 className="text-lg sm:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
                       Interactive Stats Calculator
                     </h2>
                   </div>
@@ -355,7 +355,7 @@ const UnitModal: React.FC<UnitModalProps> = ({ unit, isOpen, onClose, onUnitSele
                     </div>
 
                     {/* Interactive Stat Grade Selectors */}
-                    <div className="grid grid-cols-3 gap-6 mb-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
                       {/* Damage Grade Selector */}
                       <div className="bg-gradient-to-br from-red-500/20 to-red-600/10 rounded-xl p-4 border border-red-500/30 backdrop-blur-sm shadow-lg hover:shadow-red-500/20 transition-all duration-300">
                         <div className="text-red-400 text-xs font-bold uppercase tracking-wider mb-2 text-center">Damage Grade</div>
@@ -1093,7 +1093,7 @@ const UnitModal: React.FC<UnitModalProps> = ({ unit, isOpen, onClose, onUnitSele
       <AnimatePresence>
         {isImageEnlarged && currentImage && (
           <motion.div
-            className="fixed inset-0 bg-black/95 flex items-center justify-center z-[60] p-4"
+            className="fixed inset-0 bg-black/95 flex items-center justify-center z-[110] p-2 sm:p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1109,9 +1109,9 @@ const UnitModal: React.FC<UnitModalProps> = ({ unit, isOpen, onClose, onUnitSele
               {/* Close button */}
               <button
                 onClick={() => setIsImageEnlarged(false)}
-                className="absolute top-4 right-4 p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors z-10"
+                className="absolute top-2 right-2 sm:top-4 sm:right-4 p-2 sm:p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors z-10"
               >
-                <X className="h-6 w-6 text-white" />
+                <X className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
               </button>
 
               {/* Unit name and shiny indicator */}

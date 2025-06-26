@@ -59,7 +59,7 @@ const Toast: React.FC<ToastProps> = ({
           initial={{ opacity: 0, y: -50, scale: 0.9 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: -50, scale: 0.9 }}
-          className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg min-w-[300px] max-w-[500px] ${getStyles()}`}
+          className={`fixed top-4 right-4 z-20 flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg min-w-[300px] max-w-[500px] ${getStyles()}`}
         >
           <div className="flex-shrink-0">
             {getIcon()}

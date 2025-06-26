@@ -12,6 +12,7 @@ import Gamemodes from './pages/Gamemodes'
 import Codes from './pages/Codes'
 import Updates from './pages/Updates'
 import AdminPanel from './pages/AdminPanel'
+import UnitDetails from './pages/UnitDetails'
 
 // Protected Route Component for Admin
 const ProtectedAdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -73,6 +74,7 @@ function App() {
           <div className="fixed inset-0 -z-10">
             <div className="animated-gradient-bg"></div>
             <div className="animated-gradient-overlay"></div>
+            <div className="floating-particles"></div>
           </div>
           
           <Navbar />
@@ -86,6 +88,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/units" element={<Units />} />
+                <Route path="/units/:id" element={<UnitDetails />} />
                 <Route path="/tier-list" element={<TierList />} />
                 <Route path="/items" element={<Items />} />
                 <Route path="/gamemodes" element={<Gamemodes />} />

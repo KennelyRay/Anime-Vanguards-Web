@@ -45,7 +45,7 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLogin, isOpen, onClose }) => 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-40 p-4">
       <motion.div
         className="bg-dark-100 rounded-xl max-w-md w-full p-8"
         initial={{ scale: 0.9, opacity: 0 }}
