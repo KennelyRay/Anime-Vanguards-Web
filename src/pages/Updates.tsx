@@ -1,4 +1,4 @@
-
+ 
 import { motion } from 'framer-motion'
 import { Calendar, Star, Zap } from 'lucide-react'
 

@@ -69,11 +69,13 @@ const Units = () => {
   }
 
   const filteredUnits = units.filter(unit => {
+    // Only show base units (units with isBaseForm: true or no isBaseForm property for legacy units)
+    const isBaseUnit = unit.isBaseForm === true || unit.isBaseForm === undefined
     const matchesSearch = unit.name.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesTier = selectedTier === 'all' || unit.tier === selectedTier
     const matchesElement = selectedElement === 'all' || unit.element === selectedElement
     const matchesRarity = selectedRarity === 'all' || unit.rarity === selectedRarity
-    return matchesSearch && matchesTier && matchesElement && matchesRarity
+    return isBaseUnit && matchesSearch && matchesTier && matchesElement && matchesRarity
   })
 
   return (
@@ -251,6 +253,7 @@ const Units = () => {
         unit={selectedUnit} 
         isOpen={isModalOpen} 
         onClose={closeModal} 
+        onUnitSelect={handleUnitClick}
       />
     </div>
   )

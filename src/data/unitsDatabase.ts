@@ -8,9 +8,11 @@ export interface UnitData {
   shinyImage?: string
   description?: string
   obtainment?: string
+  videoUrl?: string
   isBaseForm?: boolean
   baseForm?: string
   evolutionLine?: string[]
+  doesntEvolve?: boolean
   stats?: {
     damage: string
     speed: string
@@ -108,7 +110,7 @@ export const unitsDatabase: UnitData[] = [
   {
     name: 'Song Jinwu',
     tier: 'A+',
-    element: 'Shadow',
+    element: 'Curse',
     rarity: 'Epic', 
     cost: 750,
     description: 'The Shadow Hunter with growing power. Can evolve with Igros for ultimate combination.',
@@ -129,7 +131,7 @@ export const unitsDatabase: UnitData[] = [
       {
         name: 'Song Jinwu (Monarch)',
         tier: 'Z+',
-        element: 'Shadow',
+        element: 'Curse',
         rarity: 'Legendary',
         cost: 950,
         description: 'The Shadow Monarch with enhanced shadow army capabilities.',
@@ -176,8 +178,8 @@ export const unitsDatabase: UnitData[] = [
     element: 'Water',
     rarity: 'Rare',
     cost: 25,
-    image: '/images/units/Slime_29_Pose.webp',
-    shinyImage: '/images/units/Slime_29_Shiny_Pose.webp',
+    image: '/images/units/Slime_Pose.webp',
+    shinyImage: '/images/units/Slime_Shiny_Pose.webp',
     description: 'A humble slime that can evolve into the mighty Slime King.',
     obtainment: 'Common summon or story mode',
     isBaseForm: true,
@@ -194,8 +196,8 @@ export const unitsDatabase: UnitData[] = [
         element: 'Water',
         rarity: 'Exclusive',
         cost: 1000,
-        image: '/images/units/Slime_29_Pose.webp',
-        shinyImage: '/images/units/Slime_29_Shiny_Pose.webp',
+        image: '/images/units/Slime_EVO_Pose.webp',
+        shinyImage: '/images/units/Slime_EVO_Shiny_Pose.webp',
         description: 'The ultimate evolution of slime with royal water mastery.',
         requirements: 'Level 20 + Royal Jelly x10 + Water Crown',
         bonuses: [
@@ -269,7 +271,7 @@ export const unitsDatabase: UnitData[] = [
   {
     name: 'Conqueror',
     tier: 'A',
-    element: 'Willpower',
+    element: 'Passion',
     rarity: 'Legendary',
     cost: 900,
     image: '/images/units/Conqueror_vs_Invulnerable_Pose.webp',
@@ -287,7 +289,7 @@ export const unitsDatabase: UnitData[] = [
       {
         name: 'Conqueror vs Invulnerable',
         tier: 'S',
-        element: 'Willpower',
+        element: 'Passion',
         rarity: 'Mythic',
         cost: 1300,
         image: '/images/units/Conqueror_vs_Invulnerable_Pose.webp',
@@ -874,12 +876,10 @@ export const getEvolutionsByBaseName = (baseName: string): UnitData['evolutions'
   return unit?.evolutions || []
 }
 
-// Export element types for filtering
+// Export element types for filtering - ONLY the actual elements in the game
 export const elementTypes = [
-  'Water', 'Fire', 'Wind', 'Earth', 'Lightning', 'Nature', 'Dark', 'Light', 
-  'Holy', 'Curse', 'Shadow', 'Death', 'Soul', 'Psychic', 'Time', 'Space',
-  'Blood', 'Tech', 'Cosmic', 'Rubber', 'Willpower', 'Chakra', 'Passion',
-  'Blast', 'Unbound', 'Unknown', 'Spark'
+  'Blast', 'Cosmic', 'Curse', 'Fire', 'Holy', 'Nature', 'Passion', 'Spark',
+  'Unbound', 'UnknownElement', 'Water'
 ]
 
 // Export tier list for easy access
@@ -889,4 +889,90 @@ export const tierList = {
   'B': unitsDatabase.filter(unit => unit.tier === 'B' || (unit.evolutions && unit.evolutions.some(evo => evo.tier === 'B'))),
   'C': unitsDatabase.filter(unit => unit.tier === 'C'),
   'D': unitsDatabase.filter(unit => unit.tier === 'D')
+}
+
+// Stat calculation system based on grade percentages
+export const STAT_RANGES = {
+  D: { damage: [0, 4.99] as const, spa: [0, 2.49] as const, range: [0, 2.49] as const, chance: 40, potential: 0 },
+  C: { damage: [5, 7.99] as const, spa: [2.5, 3.99] as const, range: [2.5, 3.99] as const, chance: 30, potential: 0 },
+  B: { damage: [8, 10.99] as const, spa: [4, 5.49] as const, range: [4, 5.49] as const, chance: 30, potential: 0 },
+  A: { damage: [11, 13.99] as const, spa: [5.5, 6.99] as const, range: [5.5, 6.99] as const, chance: 4.35, potential: 75 },
+  S: { damage: [14, 16.99] as const, spa: [7, 8.49] as const, range: [7, 8.49] as const, chance: 1, potential: 20 },
+  Z: { damage: [17, 19.99] as const, spa: [8.5, 9.9] as const, range: [8.5, 9.9] as const, chance: 0.85, potential: 4.15 },
+  'Z+': { damage: [20, 22.99] as const, spa: [10, 11.49] as const, range: [10, 11.49] as const, chance: 0.2, potential: 0.6 },
+  '神': { damage: [23, 25] as const, spa: [11.5, 12.5] as const, range: [11.5, 12.5] as const, chance: 0.1, potential: 0.25 }
+} as const
+
+export type StatGrade = keyof typeof STAT_RANGES
+
+// Calculate actual stat values from grades
+export const calculateStatValue = (grade: StatGrade, statType: 'damage' | 'spa' | 'range', useMax = false): number => {
+  const range = STAT_RANGES[grade][statType]
+  // For damage, spa, range - return percentage value
+  return useMax ? range[1] : (range[0] + range[1]) / 2
+}
+
+// Get the chance and potential values for a grade
+export const getGradeChance = (grade: StatGrade): number => {
+  return STAT_RANGES[grade].chance
+}
+
+export const getGradePotential = (grade: StatGrade): number => {
+  return STAT_RANGES[grade].potential
+}
+
+// Calculate base stats for a unit based on grades
+export const calculateBaseStats = (grades: { damage: StatGrade; speed: StatGrade; range: StatGrade }) => {
+  return {
+    damagePercentage: calculateStatValue(grades.damage, 'damage'),
+    spaPercentage: calculateStatValue(grades.speed, 'spa'),
+    rangePercentage: calculateStatValue(grades.range, 'range'),
+    critChance: getGradeChance(grades.damage), // Use damage grade for crit chance
+    potential: getGradePotential(grades.damage) // Use damage grade for potential
+  }
+}
+
+// Helper to get all available stat grades
+export const getAvailableStatGrades = (): StatGrade[] => {
+  return Object.keys(STAT_RANGES) as StatGrade[]
+}
+
+// Helper to format stat display
+export const formatStatDisplay = (grade: StatGrade, statType: 'damage' | 'spa' | 'range'): string => {
+  const range = STAT_RANGES[grade][statType]
+  if (Array.isArray(range)) {
+    return `${range[0]}%-${range[1]}%`
+  }
+  return `${range}%`
+}
+
+// Get the full range for a stat grade
+export const getStatRange = (grade: StatGrade, statType: 'damage' | 'spa' | 'range'): [number, number] => {
+  const range = STAT_RANGES[grade][statType]
+  return [range[0], range[1]]
+}
+
+// Calculate stat value from grade and custom percentage
+export const calculateCustomStatValue = (grade: StatGrade, statType: 'damage' | 'spa' | 'range', percentage: number): number => {
+  const [min, max] = getStatRange(grade, statType)
+  // Clamp percentage to the grade's range
+  return Math.max(min, Math.min(max, percentage))
+}
+
+// Apply stat bonuses to upgrade stats
+export const applyStatBonuses = (
+  baseStats: UnitData['upgradeStats'], 
+  bonuses: { damage: number; spa: number; range: number }
+) => {
+  if (!baseStats) return baseStats
+
+  return {
+    ...baseStats,
+    levels: baseStats.levels.map(level => ({
+      ...level,
+      atkDamage: Math.round(level.atkDamage * (1 + bonuses.damage / 100)),
+      spa: parseFloat((level.spa * (1 - bonuses.spa / 100)).toFixed(1)), // SPA decreases with higher bonus
+      range: parseFloat((level.range * (1 + bonuses.range / 100)).toFixed(1))
+    }))
+  }
 } 

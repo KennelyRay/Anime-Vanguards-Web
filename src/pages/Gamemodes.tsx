@@ -1,4 +1,4 @@
-
+ 
 import { motion } from 'framer-motion'
 import { Gamepad2, Trophy, Target, Clock } from 'lucide-react'
 

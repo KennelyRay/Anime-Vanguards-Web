@@ -68,10 +68,16 @@ function App() {
   return (
     <ErrorBoundary>
       <UnitsProvider>
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col relative overflow-hidden">
+          {/* Animated Background */}
+          <div className="fixed inset-0 -z-10">
+            <div className="animated-gradient-bg"></div>
+            <div className="animated-gradient-overlay"></div>
+          </div>
+          
           <Navbar />
           
-          <main className="flex-1">
+          <main className="flex-1 relative z-10">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
