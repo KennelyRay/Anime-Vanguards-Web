@@ -16,6 +16,7 @@
     "start:prod": "concurrently \"npm run server\" \"npm run preview\""
   },
   "dependencies": {
+    "@headlessui/react": "^2.2.4",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.6.0",
@@ -56,4 +57,3 @@
   "author": "Anime Vanguards Community",
   "license": "MIT"
 }
- 

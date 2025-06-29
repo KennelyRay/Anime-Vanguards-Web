@@ -922,6 +922,129 @@ const AdminPanel = () => {
     evolutionImageRefs.current[refKey]?.click()
   }
 
+  // TRAIT DATA
+  const TRAITS = [
+    {
+      key: 'Monarch',
+      name: 'Monarch',
+      icon: '/images/traits/Monarch.webp',
+      description: 'Damage +300%, SPA -10%, Range +5%, ONE PLACEMENT',
+      bonus: { damage: 300, spa: 10, range: 5, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0, placement: 1 }
+    },
+    {
+      key: 'Ethereal',
+      name: 'Ethereal',
+      icon: '/images/traits/Ethereal.webp',
+      description: 'Damage +20%, SPA -20%, Range +5%',
+      bonus: { damage: 20, spa: 20, range: 5, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0 }
+    },
+    {
+      key: 'Deadeye',
+      name: 'Deadeye',
+      icon: '/images/traits/Deadeye.webp',
+      description: 'Crit Chance +45%, Crit Damage +50%',
+      bonus: { damage: 0, spa: 0, range: 0, critChance: 45, critDamage: 50, cash: 0, upgradeCost: 0, exp: 0 }
+    },
+    {
+      key: 'Solar',
+      name: 'Solar',
+      icon: '/images/traits/Solar.webp',
+      description: 'Damage +10%, SPA -5%, Range +25%',
+      bonus: { damage: 10, spa: 5, range: 25, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0 }
+    },
+    {
+      key: 'Blitz',
+      name: 'Blitz',
+      icon: '/images/traits/Blitz.webp',
+      description: 'SPA -20%',
+      bonus: { damage: 0, spa: 20, range: 0, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0 }
+    },
+    {
+      key: 'Fortune',
+      name: 'Fortune',
+      icon: '/images/traits/Scholar.webp',
+      description: 'Farm: Cash +20%. Non-farm: Upgrade cost -10%',
+      bonus: { damage: 0, spa: 0, range: 0, critChance: 0, critDamage: 0, cash: 20, upgradeCost: -10, exp: 0 }
+    },
+    {
+      key: 'Marksman',
+      name: 'Marksman',
+      icon: '/images/traits/Marksman.webp',
+      description: 'Range +30%',
+      bonus: { damage: 0, spa: 0, range: 30, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0 }
+    },
+    {
+      key: 'Scholar',
+      name: 'Scholar',
+      icon: '/images/traits/Scholar.webp',
+      description: 'EXP +50%',
+      bonus: { damage: 0, spa: 0, range: 0, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 50 }
+    },
+    {
+      key: 'Vigor 1',
+      name: 'Vigor 1',
+      icon: '/images/traits/Vigor.webp',
+      description: 'Damage +5%',
+      bonus: { damage: 5, spa: 0, range: 0, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0 }
+    },
+    {
+      key: 'Vigor 2',
+      name: 'Vigor 2',
+      icon: '/images/traits/Vigor.webp',
+      description: 'Damage +10%',
+      bonus: { damage: 10, spa: 0, range: 0, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0 }
+    },
+    {
+      key: 'Vigor 3',
+      name: 'Vigor 3',
+      icon: '/images/traits/Vigor.webp',
+      description: 'Damage +15%',
+      bonus: { damage: 15, spa: 0, range: 0, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0 }
+    },
+    {
+      key: 'Swift 1',
+      name: 'Swift 1',
+      icon: '/images/traits/Swift.webp',
+      description: 'SPA -5%',
+      bonus: { damage: 0, spa: 5, range: 0, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0 }
+    },
+    {
+      key: 'Swift 2',
+      name: 'Swift 2',
+      icon: '/images/traits/Swift.webp',
+      description: 'SPA -7.5%',
+      bonus: { damage: 0, spa: 7.5, range: 0, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0 }
+    },
+    {
+      key: 'Swift 3',
+      name: 'Swift 3',
+      icon: '/images/traits/Swift.webp',
+      description: 'SPA -12.5%',
+      bonus: { damage: 0, spa: 12.5, range: 0, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0 }
+    },
+    {
+      key: 'Range 1',
+      name: 'Range 1',
+      icon: '/images/traits/Range.webp',
+      description: 'Range +5%',
+      bonus: { damage: 0, spa: 0, range: 5, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0 }
+    },
+    {
+      key: 'Range 2',
+      name: 'Range 2',
+      icon: '/images/traits/Range.webp',
+      description: 'Range +10%',
+      bonus: { damage: 0, spa: 0, range: 10, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0 }
+    },
+    {
+      key: 'Range 3',
+      name: 'Range 3',
+      icon: '/images/traits/Range.webp',
+      description: 'Range +15%',
+      bonus: { damage: 0, spa: 0, range: 15, critChance: 0, critDamage: 0, cash: 0, upgradeCost: 0, exp: 0 }
+    }
+  ]
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-dark-100 via-dark-200 to-dark-300">
       {/* Modern Header with Gradient */}
@@ -1271,6 +1394,26 @@ const AdminPanel = () => {
                       </div>
                     </div>
 
+                    {/* Trait Selector */}
+                    <div className="mt-6">
+                      <label className="block text-sm font-medium text-gray-300 mb-2">Trait</label>
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                        {TRAITS.map(trait => (
+                          <button
+                            key={trait.key}
+                            type="button"
+                            className={`flex flex-col items-center p-3 rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-400/20
+                              ${newUnit.traits && newUnit.traits[0] === trait.key ? 'border-primary-500 bg-primary-500/10 ring-2 ring-primary-400' : 'border-primary-500/20 bg-dark-300/40 hover:bg-primary-500/10'}`}
+                            onClick={() => handleInputChange('traits', [trait.key])}
+                          >
+                            <img src={trait.icon} alt={trait.name} className="w-8 h-8 mb-2" />
+                            <span className="text-xs text-white font-bold mb-1">{trait.name}</span>
+                            <span className="text-[10px] text-gray-400 text-center">{trait.description}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Calculated Stats Display */}
                     {newUnit.stats && (
                       <div className="bg-dark-300/20 rounded-lg p-4 border border-primary-500/10">
@@ -1279,11 +1422,22 @@ const AdminPanel = () => {
                         </label>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           {(() => {
-                            const calculatedStats = calculateBaseStats({
+                            let calculatedStats = calculateBaseStats({
                               damage: newUnit.stats.damage as StatGrade || 'D',
                               speed: newUnit.stats.speed as StatGrade || 'D',
                               range: newUnit.stats.range as StatGrade || 'D'
                             })
+                            const selectedTrait = TRAITS.find(t => newUnit.traits && newUnit.traits[0] === t.key)
+                            if (selectedTrait) {
+                              calculatedStats = {
+                                ...calculatedStats,
+                                damagePercentage: calculatedStats.damagePercentage * (1 + selectedTrait.bonus.damage / 100),
+                                spaPercentage: calculatedStats.spaPercentage * (1 - selectedTrait.bonus.spa / 100),
+                                rangePercentage: calculatedStats.rangePercentage * (1 + selectedTrait.bonus.range / 100),
+                                critChance: calculatedStats.critChance + (selectedTrait.bonus.critChance || 0),
+                                potential: calculatedStats.potential // unchanged
+                              }
+                            }
                             return (
                               <>
                                 <div className="flex justify-between">

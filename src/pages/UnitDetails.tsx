@@ -11,6 +11,7 @@ import {
   getAvailableStatGrades, getStatRange, calculateCustomStatValue, 
   applyStatBonuses, STAT_RANGES 
 } from '../data/unitsDatabase'
+import { Dialog } from '@headlessui/react'
 
 const getTierData = (tier: string) => {
   const tierMap: { [key: string]: { icon: string; label: string } } = {
@@ -42,6 +43,104 @@ const getElementIcon = (element: string) => {
   return elementMap[element] || '/images/Elements/UnknownElement.webp'
 }
 
+// TRAIT DATA
+const TRAITS = [
+  {
+    key: 'Monarch',
+    name: 'Monarch',
+    icon: '/images/traits/Monarch.webp',
+    description: 'Damage +300%, SPA -10%, Range +5%, ONE PLACEMENT',
+    bonus: { damage: 300, spa: 10, range: 5, critChance: 0, critDamage: 0 }
+  },
+  {
+    key: 'Ethereal',
+    name: 'Ethereal',
+    icon: '/images/traits/Ethereal.webp',
+    description: 'Damage +20%, SPA -20%, Range +5%',
+    bonus: { damage: 20, spa: 20, range: 5, critChance: 0, critDamage: 0 }
+  },
+  {
+    key: 'Deadeye',
+    name: 'Deadeye',
+    icon: '/images/traits/Deadeye.webp',
+    description: 'Crit Chance +45%, Crit Damage +50%',
+    bonus: { damage: 0, spa: 0, range: 0, critChance: 45, critDamage: 50 }
+  },
+  {
+    key: 'Solar',
+    name: 'Solar',
+    icon: '/images/traits/Solar.webp',
+    description: 'Damage +10%, SPA -5%, Range +25%',
+    bonus: { damage: 10, spa: 5, range: 25, critChance: 0, critDamage: 0 }
+  },
+  {
+    key: 'Blitz',
+    name: 'Blitz',
+    icon: '/images/traits/Blitz.webp',
+    description: 'SPA -20%',
+    bonus: { damage: 0, spa: 20, range: 0, critChance: 0, critDamage: 0 }
+  },
+  {
+    key: 'Fortune',
+    name: 'Fortune',
+    icon: '/images/traits/Fortune.webp',
+    description: 'Farm: +20% Cash income. Non-farm: -10% upgrade cost.',
+    bonus: { damage: 0, spa: 0, range: 0, critChance: 0, critDamage: 0 }
+  },
+  {
+    key: 'Marksman',
+    name: 'Marksman',
+    icon: '/images/traits/Marksman.webp',
+    description: 'Range +30%',
+    bonus: { damage: 0, spa: 0, range: 30, critChance: 0, critDamage: 0 }
+  },
+  {
+    key: 'Scholar',
+    name: 'Scholar',
+    icon: '/images/traits/Scholar.webp',
+    description: 'EXP +50%',
+    bonus: { damage: 0, spa: 0, range: 0, critChance: 0, critDamage: 0 }
+  },
+  // Vigor with levels
+  {
+    key: 'Vigor',
+    name: 'Vigor',
+    icon: '/images/traits/Vigor.webp',
+    levels: [
+      { label: 'I', description: 'Damage +5%', bonus: { damage: 5, spa: 0, range: 0, critChance: 0, critDamage: 0 } },
+      { label: 'II', description: 'Damage +10%', bonus: { damage: 10, spa: 0, range: 0, critChance: 0, critDamage: 0 } },
+      { label: 'III', description: 'Damage +15%', bonus: { damage: 15, spa: 0, range: 0, critChance: 0, critDamage: 0 } }
+    ]
+  },
+  // Swift with levels
+  {
+    key: 'Swift',
+    name: 'Swift',
+    icon: '/images/traits/Swift.webp',
+    levels: [
+      { label: 'I', description: 'SPA -5%', bonus: { damage: 0, spa: 5, range: 0, critChance: 0, critDamage: 0 } },
+      { label: 'II', description: 'SPA -7.5%', bonus: { damage: 0, spa: 7.5, range: 0, critChance: 0, critDamage: 0 } },
+      { label: 'III', description: 'SPA -12.5%', bonus: { damage: 0, spa: 12.5, range: 0, critChance: 0, critDamage: 0 } }
+    ]
+  },
+  // Range with levels
+  {
+    key: 'Range',
+    name: 'Range',
+    icon: '/images/traits/Range.webp',
+    levels: [
+      { label: 'I', description: 'Range +5%', bonus: { damage: 0, spa: 0, range: 5, critChance: 0, critDamage: 0 } },
+      { label: 'II', description: 'Range +10%', bonus: { damage: 0, spa: 0, range: 10, critChance: 0, critDamage: 0 } },
+      { label: 'III', description: 'Range +15%', bonus: { damage: 0, spa: 0, range: 15, critChance: 0, critDamage: 0 } }
+    ]
+  }
+]
+
+// Helper type guard
+function hasLevels(trait: any): trait is { levels: any[] } {
+  return Array.isArray(trait?.levels);
+}
+
 const UnitDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -64,6 +163,38 @@ const UnitDetails: React.FC = () => {
     speed: 0,
     range: 0
   })
+
+  // Trait preview state
+  const [previewTraitKey, setPreviewTraitKey] = useState<string | null>(null)
+  const [traitModalOpen, setTraitModalOpen] = useState(false)
+  const [traitLevel, setTraitLevel] = useState<{ [traitKey: string]: number }>({})
+  // Determine the trait to use for calculations (preview or actual)
+  let selectedTrait: any = null;
+  let traitBonus: { damage: number; spa: number; range: number; critChance: number; critDamage: number } = { damage: 0, spa: 0, range: 0, critChance: 0, critDamage: 0 };
+  if (previewTraitKey) {
+    const [baseKey, levelLabel] = previewTraitKey.split(' ');
+    const trait = TRAITS.find(t => t.key === baseKey);
+    if (trait && hasLevels(trait)) {
+      const level = trait.levels.find((lvl: any) => lvl.label === levelLabel) || trait.levels[2];
+      selectedTrait = { ...trait, ...level };
+      traitBonus = level?.bonus ?? traitBonus;
+    } else if (trait) {
+      selectedTrait = trait;
+      traitBonus = trait.bonus ?? traitBonus;
+    }
+  } else if (unit && Array.isArray(unit.traits) && unit.traits.length > 0) {
+    const actualTraitKey = unit.traits[0];
+    const [baseKey, levelLabel] = actualTraitKey.split(' ');
+    const trait = TRAITS.find(t => t.key === baseKey);
+    if (trait && hasLevels(trait)) {
+      const level = trait.levels.find((lvl: any) => lvl.label === levelLabel) || trait.levels[2];
+      selectedTrait = { ...trait, ...level };
+      traitBonus = level?.bonus ?? traitBonus;
+    } else if (trait) {
+      selectedTrait = trait;
+      traitBonus = trait.bonus ?? traitBonus;
+    }
+  }
 
   // Reset states when unit changes
   useEffect(() => {
@@ -249,6 +380,109 @@ const UnitDetails: React.FC = () => {
           </div>
         </motion.div>
 
+        {/* Trait Display and Selector */}
+        {unit && selectedTrait && (
+          <div className="mb-4 flex items-center gap-4 bg-dark-200/40 p-4 rounded-xl border border-primary-500/20">
+            <img src={selectedTrait.icon} alt="Current Trait" className="w-10 h-10 rounded-lg" />
+            <div>
+              <div className="text-base font-bold text-white">Current Trait</div>
+              <div className="text-sm text-white font-bold">{selectedTrait.name}</div>
+              <div className="text-xs text-gray-300">{selectedTrait.description}</div>
+            </div>
+          </div>
+        )}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-sm font-bold text-white">Preview Trait</span>
+          </div>
+          <button
+            className="px-4 py-2 bg-primary-600 text-white rounded-lg font-bold hover:bg-primary-700 transition"
+            onClick={() => setTraitModalOpen(true)}
+          >
+            Select Trait
+          </button>
+          {traitModalOpen && <div className="fixed inset-0 bg-black/60 z-40"></div>}
+          <Dialog open={traitModalOpen} onClose={() => setTraitModalOpen(false)} className="fixed z-50 inset-0 overflow-y-auto">
+            <div className="flex items-center justify-center min-h-screen px-4">
+              {/* Blurred glass overlay */}
+              {traitModalOpen && <div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-[4px]" style={{ WebkitBackdropFilter: 'blur(4px)' }}></div>}
+              <Dialog.Panel className="relative bg-gradient-to-br from-dark-200/90 to-dark-400/90 rounded-3xl p-6 max-w-2xl w-full z-50 border border-primary-500/20 shadow-2xl backdrop-blur-[8px] max-h-[80vh] overflow-y-auto">
+                {/* Close (X) button */}
+                <button
+                  onClick={() => setTraitModalOpen(false)}
+                  aria-label="Close"
+                  className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-dark-100/40 hover:bg-primary-500/80 text-white text-2xl font-bold shadow-md focus:outline-none focus:ring-2 focus:ring-primary-400/40 z-10 transition"
+                >
+                  &times;
+                </button>
+                <Dialog.Title className="text-2xl font-extrabold text-white mb-6 tracking-wide drop-shadow-lg">Select a Trait</Dialog.Title>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5 mb-5">
+                  {TRAITS.map(trait => {
+                    const isLevelTrait = hasLevels(trait);
+                    const selectedLevelIdx = traitLevel[trait.key] ?? (isLevelTrait ? 2 : 0); // Default to III if levels exist
+                    const level = isLevelTrait ? trait.levels[selectedLevelIdx] : null;
+                    const isSelected = (previewTraitKey === (isLevelTrait ? `${trait.key} ${level?.label}` : trait.key)) ||
+                      (!previewTraitKey && selectedTrait && selectedTrait.key === (isLevelTrait ? `${trait.key} ${level?.label}` : trait.key));
+                    return (
+                      <div
+                        key={trait.key}
+                        className={`flex flex-col items-center justify-between w-48 h-56 bg-gradient-to-br from-dark-300/80 to-dark-500/80 rounded-2xl p-4 border transition-all duration-200 shadow-xl relative
+                          ${isSelected ? 'border-primary-400 shadow-primary-500/30 ring-2 ring-primary-400/40' : 'border-dark-100/20 hover:border-primary-400/40 hover:shadow-primary-400/10'}
+                        `}
+                        style={{ backdropFilter: 'blur(8px)' }}
+                      >
+                        <button
+                          type="button"
+                          className={`flex flex-col items-center flex-1 w-full focus:outline-none group`}
+                          onClick={() => {
+                            const traitKey = isLevelTrait ? `${trait.key} ${level?.label}` : trait.key;
+                            if (previewTraitKey === traitKey) {
+                              setPreviewTraitKey(null);
+                            } else {
+                              setPreviewTraitKey(traitKey);
+                              setTraitModalOpen(false);
+                            }
+                          }}
+                        >
+                          <div className={`rounded-full bg-dark-100/30 p-3 mb-2 shadow-lg group-hover:scale-110 transition-transform duration-200 ${isSelected ? 'ring-2 ring-primary-400/80' : ''}`}>
+                            <img src={trait.icon} alt={trait.name} className="w-12 h-12 object-contain" />
+                          </div>
+                          <span className="text-base text-white font-extrabold mb-1 tracking-wide drop-shadow-lg">{trait.name}{isLevelTrait ? ` ${level?.label}` : ''}</span>
+                          <span className="text-xs text-gray-300 text-center font-medium mb-2 min-h-[32px]">{isLevelTrait ? level?.description : trait.description}</span>
+                        </button>
+                        {isLevelTrait && Array.isArray(trait.levels) && (
+                          <div className="flex gap-2 mt-2 justify-center w-full">
+                            {trait.levels.map((lvl, idx) => (
+                              <button
+                                key={lvl.label}
+                                className={`px-3 py-1 rounded-full text-xs font-bold transition-all duration-150 border-2
+                                  ${selectedLevelIdx === idx ? 'bg-primary-500/90 text-white border-primary-400 shadow-primary-400/30 shadow-md' : 'bg-dark-200/60 text-gray-200 border-dark-100/30 hover:bg-primary-700/60 hover:text-white'}
+                                `}
+                                onClick={() => {
+                                  setTraitLevel(prev => ({ ...prev, [trait.key]: idx }));
+                                  const traitKey = `${trait.key} ${lvl.label}`;
+                                  if (previewTraitKey === traitKey) {
+                                    setPreviewTraitKey(null);
+                                  } else {
+                                    setPreviewTraitKey(traitKey);
+                                    setTraitModalOpen(false);
+                                  }
+                                }}
+                              >
+                                {lvl.label}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </Dialog.Panel>
+            </div>
+          </Dialog>
+        </div>
+
         {/* Improved Main Content Grid */}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
           {/* Left Sidebar - Enhanced */}
@@ -370,6 +604,17 @@ const UnitDetails: React.FC = () => {
                   Interactive Stats Calculator
                 </h2>
               </div>
+
+              {/* Trait Display */}
+              {selectedTrait && (
+                <div className="mb-6 flex items-center gap-4 bg-dark-200/40 p-4 rounded-xl border border-primary-500/20">
+                  <img src={selectedTrait.icon} alt={selectedTrait.name} className="w-12 h-12 rounded-lg" />
+                  <div>
+                    <div className="text-lg font-bold text-white">{selectedTrait.name}</div>
+                    <div className="text-xs text-gray-300">{selectedTrait.description}</div>
+                  </div>
+                </div>
+              )}
 
               <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-xl p-4 mb-6 border border-blue-500/20">
                 <div className="flex items-center gap-2 text-blue-300 mb-2">
@@ -669,12 +914,15 @@ const UnitDetails: React.FC = () => {
                     range: selectedPercentages.range / 100
                   }
 
+                  // Apply trait bonus
+                  const traitBonus = selectedTrait ? selectedTrait.bonus : { damage: 0, spa: 0, range: 0, critChance: 0, critDamage: 0 }
+
                   const bonusedStats = {
-                    atkDamage: baseLevel.atkDamage * (1 + statBonuses.damage),
-                    spa: baseLevel.spa * (1 - statBonuses.spa), // SPA reduces with higher grades
-                    range: baseLevel.range * (1 + statBonuses.range),
-                    critDamage: baseLevel.critDamage,
-                    critChance: baseLevel.critChance
+                    atkDamage: baseLevel.atkDamage * (1 + statBonuses.damage + (traitBonus.damage || 0) / 100),
+                    spa: baseLevel.spa * (1 - statBonuses.spa - (traitBonus.spa || 0) / 100),
+                    range: baseLevel.range * (1 + statBonuses.range + (traitBonus.range || 0) / 100),
+                    critDamage: baseLevel.critDamage + (traitBonus.critDamage || 0),
+                    critChance: baseLevel.critChance + (traitBonus.critChance || 0)
                   }
 
                   return (
