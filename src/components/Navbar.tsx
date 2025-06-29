@@ -3,15 +3,16 @@ import { Link, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Sword, Shield, Star, Gamepad2, Gift, Zap, LogOut, Home, Trophy, ChevronLeft, ChevronRight, LogIn, User } from 'lucide-react'
 import { useSidebar } from '../App'
+import { apiService } from '../services/api'
 
 interface UserType {
   id: string
   username: string
-  password: string
   email?: string
   createdAt: string
   isAdmin: boolean
   profilePicture?: string
+  lastLogin?: string
 }
 
 const Navbar = () => {
@@ -22,10 +23,25 @@ const Navbar = () => {
   const [currentUser, setCurrentUser] = useState<UserType | null>(null)
   const location = useLocation()
 
-  // Function to update user data from localStorage
-  const updateUserData = () => {
+  // Function to update user data from localStorage and optionally refresh from server
+  const updateUserData = async (refreshFromServer = false) => {
     const adminStatus = localStorage.getItem('isAdmin') === 'true'
     const userJson = localStorage.getItem('currentUser')
+    
+    if (refreshFromServer && apiService.isAuthenticated()) {
+      try {
+        const freshUser = await apiService.refreshUserData()
+        if (freshUser) {
+          setCurrentUser(freshUser)
+          setIsAdmin(freshUser.isAdmin)
+          setIsLoggedIn(true)
+          return
+        }
+      } catch (error) {
+        console.error('Failed to refresh user data:', error)
+      }
+    }
+    
     setIsAdmin(adminStatus)
     setIsLoggedIn(!!userJson)
     
@@ -115,14 +131,18 @@ const Navbar = () => {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('isAdmin')
-    localStorage.removeItem('currentUser')
-    setIsAdmin(false)
-    setIsLoggedIn(false)
-    setCurrentUser(null)
-    window.dispatchEvent(new Event('userDataUpdated'))
-    window.location.href = '/'
+  const handleLogout = async () => {
+    try {
+      await apiService.logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      setIsAdmin(false)
+      setIsLoggedIn(false)
+      setCurrentUser(null)
+      window.dispatchEvent(new Event('userDataUpdated'))
+      window.location.href = '/'
+    }
   }
 
   return (

@@ -33,6 +33,7 @@ interface NewUnit extends Omit<UnitData, 'evolutions' | 'cost'> {
   videoUrl?: string
   tags?: string[]
   doesntEvolve?: boolean
+  featured?: boolean // Show in featured section
 }
 
 // Helper function to get tier icon and label
@@ -139,12 +140,15 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
 }
 
 const AdminPanel = () => {
-  const { units, addUnit, updateUnit, deleteUnit, resetToDefault } = useUnits()
-  const [activeTab, setActiveTab] = useState<'add' | 'manage'>('add')
+  const { units, addUnit, updateUnit, deleteUnit, resetToDefault, refreshFromMongoDB, isLoading, error } = useUnits()
+  const [activeTab, setActiveTab] = useState<'add' | 'manage' | 'database'>('add')
   const [editingUnit, setEditingUnit] = useState<UnitData | null>(null)
   const [selectedUnits, setSelectedUnits] = useState<Set<string>>(new Set())
   const [bulkDeleteMode, setBulkDeleteMode] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const imageInputRef = useRef<HTMLInputElement>(null)
+  const shinyImageInputRef = useRef<HTMLInputElement>(null)
+  const evolutionImageRefs = useRef<Record<string, HTMLInputElement | null>>({})
   
   // Toast notification state
   const [toast, setToast] = useState<{
@@ -182,24 +186,23 @@ const AdminPanel = () => {
     tags: [],
     isBaseForm: true,
     doesntEvolve: false,
+    featured: false,
     stats: {
       damage: 'D',
       speed: 'D',
       range: 'D'
     },
-            upgradeStats: {
-          maxUpgrades: 4,
-          levels: [
-            { level: 0, yenCost: 3500, atkDamage: 24, range: 5, spa: 5.0, critDamage: 300, critChance: 0.0 },
-            { level: 1, yenCost: 4200, atkDamage: 26, range: 5, spa: 5.0, critDamage: 360, critChance: 0.0 },
-            { level: 2, yenCost: 5700, atkDamage: 28, range: 5, spa: 5.0, critDamage: 420, critChance: 0.0 },
-            { level: 3, yenCost: 6400, atkDamage: 30, range: 5, spa: 5.0, critDamage: 480, critChance: 0.0 }
-          ]
-        },
+    upgradeStats: {
+      maxUpgrades: 4,
+      levels: [
+        { level: 0, yenCost: 3500, atkDamage: 24, range: 5, spa: 5.0, critDamage: 300, critChance: 0.0 },
+        { level: 1, yenCost: 4200, atkDamage: 26, range: 5, spa: 5.0, critDamage: 360, critChance: 0.0 },
+        { level: 2, yenCost: 5700, atkDamage: 28, range: 5, spa: 5.0, critDamage: 420, critChance: 0.0 },
+        { level: 3, yenCost: 6400, atkDamage: 30, range: 5, spa: 5.0, critDamage: 480, critChance: 0.0 }
+      ]
+    },
     skills: [],
-    evolutions: [],
-    traits: [],
-    trivia: []
+    evolutions: []
   })
 
   const tiers = ['Monarch', 'Godly', 'Z+', 'S+', 'A+', 'B+', 'S', 'A', 'B', 'C', 'D']
@@ -473,6 +476,7 @@ const AdminPanel = () => {
       tags: [],
       isBaseForm: true,
       doesntEvolve: false,
+      featured: false,
       stats: {
         damage: 'D',
         speed: 'D',
@@ -488,9 +492,7 @@ const AdminPanel = () => {
         ]
       },
       skills: [],
-      evolutions: [],
-      traits: [],
-      trivia: []
+      evolutions: []
     })
     setEditingUnit(null)
   }
@@ -543,15 +545,14 @@ const AdminPanel = () => {
       tags: [],
       isBaseForm: true,
       doesntEvolve: false,
+      featured: false,
       stats: {
         damage: 'D',
         speed: 'D',
         range: 'D'
       },
       skills: [],
-      evolutions: [],
-      traits: [],
-      trivia: []
+      evolutions: []
     })
   }
 
@@ -841,6 +842,86 @@ const AdminPanel = () => {
     fileInputRef.current?.click()
   }
 
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, type: 'normal' | 'shiny') => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      showToast('Please select a valid image file (JPEG, PNG, or WebP)', 'error')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      showToast('Image file size must be less than 5MB', 'error')
+      return
+    }
+
+    // Create a file path for the uploaded image
+    const fileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+    const imagePath = `/images/units/${fileName}`
+    
+    // Update the appropriate field
+    if (type === 'normal') {
+      handleInputChange('image', imagePath)
+      showToast(`Normal image uploaded: ${fileName}`, 'success')
+    } else {
+      handleInputChange('shinyImage', imagePath)
+      showToast(`Shiny image uploaded: ${fileName}`, 'success')
+    }
+
+    // Reset the input
+    event.target.value = ''
+  }
+
+  const triggerImageUpload = (type: 'normal' | 'shiny') => {
+    if (type === 'normal') {
+      imageInputRef.current?.click()
+    } else {
+      shinyImageInputRef.current?.click()
+    }
+  }
+
+  const handleEvolutionImageUpload = (event: React.ChangeEvent<HTMLInputElement>, evoIndex: number, type: 'normal' | 'shiny') => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      showToast('Please select a valid image file (JPEG, PNG, or WebP)', 'error')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      showToast('Image file size must be less than 5MB', 'error')
+      return
+    }
+
+    // Create a file path for the uploaded image
+    const fileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
+    const imagePath = `/images/units/${fileName}`
+    
+    // Update the appropriate evolution field
+    const field = type === 'normal' ? 'image' : 'shinyImage'
+    updateEvolution(evoIndex, field, imagePath)
+    
+    showToast(`Evolution ${type} image uploaded: ${fileName}`, 'success')
+
+    // Reset the input
+    event.target.value = ''
+  }
+
+  const triggerEvolutionImageUpload = (evoIndex: number, type: 'normal' | 'shiny') => {
+    const refKey = `${evoIndex}-${type}`
+    evolutionImageRefs.current[refKey]?.click()
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-dark-100 via-dark-200 to-dark-300">
       {/* Modern Header with Gradient */}
@@ -948,6 +1029,18 @@ const AdminPanel = () => {
                 {units.length}
               </span>
             </button>
+            <button
+              onClick={() => setActiveTab('database')}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-lg font-medium transition-all duration-200 ${
+                activeTab === 'database' 
+                  ? 'bg-gradient-to-r from-primary-500 to-secondary-500 text-white shadow-lg transform scale-[1.02]' 
+                  : 'text-gray-400 hover:text-white hover:bg-dark-200/50'
+              }`}
+            >
+              <Shield className="h-5 w-5" />
+              Database
+              {isLoading && <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />}
+            </button>
           </div>
         </div>
 
@@ -995,6 +1088,18 @@ const AdminPanel = () => {
                         className="w-full px-4 py-3 bg-dark-300/50 border border-primary-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 transition-all"
                         placeholder="Enter unit name"
                       />
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <input
+                        type="checkbox"
+                        checked={!!newUnit.featured}
+                        onChange={e => handleInputChange('featured', e.target.checked)}
+                        id="featured-checkbox"
+                        className="w-4 h-4 text-primary-600 bg-dark-200 border-primary-500/20 rounded focus:ring-primary-500 focus:ring-2"
+                      />
+                      <label htmlFor="featured-checkbox" className="text-sm text-gray-300 select-none cursor-pointer">
+                        Show in Featured Section
+                      </label>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1084,8 +1189,17 @@ const AdminPanel = () => {
                         value={newUnit.videoUrl || ''}
                         onChange={(e) => handleInputChange('videoUrl', e.target.value)}
                         className="w-full px-4 py-3 bg-dark-300/50 border border-primary-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 transition-all"
-                        placeholder="https://youtube.com/watch?v=..."
+                        placeholder="https://youtube.com/watch?v=... or https://youtu.be/..."
                       />
+                      {newUnit.videoUrl && (
+                        <div className="mt-2 p-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                          <div className="text-xs text-blue-200">
+                            <p className="font-semibold text-blue-100">Video Preview:</p>
+                            <p className="truncate">{newUnit.videoUrl}</p>
+                            <p className="mt-1 text-blue-300">✓ Valid video URL format</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1263,30 +1377,131 @@ const AdminPanel = () => {
                   <Upload className="h-6 w-6 text-purple-400" />
                   Images & Media
                 </h3>
+                
+                {/* Hidden file inputs */}
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={(e) => handleImageUpload(e, 'normal')}
+                  className="hidden"
+                />
+                <input
+                  ref={shinyImageInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  onChange={(e) => handleImageUpload(e, 'shiny')}
+                  className="hidden"
+                />
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div>
+                  {/* Normal Unit Image */}
+                  <div className="space-y-4">
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Normal Unit Image URL
+                      Normal Unit Image
                     </label>
-                    <input
-                      type="text"
-                      value={newUnit.image || ''}
-                      onChange={(e) => handleInputChange('image', e.target.value)}
-                      className="w-full px-4 py-3 bg-dark-300/50 border border-primary-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 transition-all"
-                      placeholder="https://example.com/unit-image.webp"
-                    />
+                    
+                    {/* Image Preview */}
+                    {newUnit.image && (
+                      <div className="relative group">
+                        <img
+                          src={newUnit.image}
+                          alt="Normal unit preview"
+                          className="w-full h-48 object-cover rounded-lg border border-primary-500/20"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                          <span className="text-white text-sm">Preview</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Upload Button */}
+                    <button
+                      type="button"
+                      onClick={() => triggerImageUpload('normal')}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-lg"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Upload Normal Image
+                    </button>
+                    
+                    {/* URL Input */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={newUnit.image || ''}
+                        onChange={(e) => handleInputChange('image', e.target.value)}
+                        className="w-full px-4 py-3 bg-dark-300/50 border border-primary-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 transition-all"
+                        placeholder="Or enter image URL..."
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <span className="text-xs text-gray-500">URL</span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
+
+                  {/* Shiny Unit Image */}
+                  <div className="space-y-4">
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      Shiny Unit Image URL
+                      Shiny Unit Image
                     </label>
-                    <input
-                      type="text"
-                      value={newUnit.shinyImage || ''}
-                      onChange={(e) => handleInputChange('shinyImage', e.target.value)}
-                      className="w-full px-4 py-3 bg-dark-300/50 border border-primary-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 transition-all"
-                      placeholder="https://example.com/unit-shiny-image.webp"
-                    />
+                    
+                    {/* Image Preview */}
+                    {newUnit.shinyImage && (
+                      <div className="relative group">
+                        <img
+                          src={newUnit.shinyImage}
+                          alt="Shiny unit preview"
+                          className="w-full h-48 object-cover rounded-lg border border-primary-500/20"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none'
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                          <span className="text-white text-sm">Preview</span>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Upload Button */}
+                    <button
+                      type="button"
+                      onClick={() => triggerImageUpload('shiny')}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg transition-all duration-200 hover:scale-105 shadow-lg"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Upload Shiny Image
+                    </button>
+                    
+                    {/* URL Input */}
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={newUnit.shinyImage || ''}
+                        onChange={(e) => handleInputChange('shinyImage', e.target.value)}
+                        className="w-full px-4 py-3 bg-dark-300/50 border border-primary-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 transition-all"
+                        placeholder="Or enter shiny image URL..."
+                      />
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <span className="text-xs text-gray-500">URL</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Upload Guidelines */}
+                <div className="mt-6 p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                  <div className="text-xs text-blue-200 space-y-1">
+                    <p className="font-semibold text-blue-100">📁 Image Upload Guidelines:</p>
+                    <p><span className="font-medium">Supported formats:</span> JPEG, PNG, WebP</p>
+                    <p><span className="font-medium">Max file size:</span> 5MB per image</p>
+                    <p><span className="font-medium">Recommended size:</span> 512x512 pixels or higher</p>
+                    <p><span className="font-medium">Auto-naming:</span> Files are automatically renamed for consistency</p>
+                    <p><span className="font-medium">Storage:</span> Images saved to /images/units/ directory</p>
+                    <p><span className="font-medium">Backup option:</span> You can still use direct URLs if preferred</p>
                   </div>
                 </div>
               </div>
@@ -1523,21 +1738,109 @@ const AdminPanel = () => {
                           </select>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        {/* Evolution Images */}
+                        <div className="mb-6">
+                          <h5 className="text-md font-semibold text-gray-300 mb-4">Evolution Images</h5>
+                          
+                          {/* Hidden file inputs for evolution images */}
                           <input
-                            type="text"
-                            value={evolution.image || ''}
-                            onChange={(e) => updateEvolution(evoIndex, 'image', e.target.value)}
-                            placeholder="Evolution image path (e.g., /images/units/unit_evo.webp)"
-                            className="px-4 py-3 bg-dark-300/50 border border-primary-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 transition-all"
+                            ref={(el) => evolutionImageRefs.current[`${evoIndex}-normal`] = el}
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            onChange={(e) => handleEvolutionImageUpload(e, evoIndex, 'normal')}
+                            className="hidden"
                           />
                           <input
-                            type="text"
-                            value={evolution.shinyImage || ''}
-                            onChange={(e) => updateEvolution(evoIndex, 'shinyImage', e.target.value)}
-                            placeholder="Evolution shiny image path (e.g., /images/units/unit_evo_shiny.webp)"
-                            className="px-4 py-3 bg-dark-300/50 border border-primary-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 transition-all"
+                            ref={(el) => evolutionImageRefs.current[`${evoIndex}-shiny`] = el}
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,image/webp"
+                            onChange={(e) => handleEvolutionImageUpload(e, evoIndex, 'shiny')}
+                            className="hidden"
                           />
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Normal Evolution Image */}
+                            <div className="space-y-3">
+                              <label className="block text-sm font-medium text-gray-400">Normal Image</label>
+                              
+                              {/* Image Preview */}
+                              {evolution.image && (
+                                <div className="relative group">
+                                  <img
+                                    src={evolution.image}
+                                    alt="Evolution preview"
+                                    className="w-full h-32 object-cover rounded-lg border border-primary-500/20"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none'
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                                    <span className="text-white text-xs">Preview</span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Upload Button */}
+                              <button
+                                type="button"
+                                onClick={() => triggerEvolutionImageUpload(evoIndex, 'normal')}
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500/80 to-purple-600/80 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-200 hover:scale-105 text-sm"
+                              >
+                                <Upload className="h-3 w-3" />
+                                Upload Image
+                              </button>
+                              
+                              {/* URL Input */}
+                              <input
+                                type="text"
+                                value={evolution.image || ''}
+                                onChange={(e) => updateEvolution(evoIndex, 'image', e.target.value)}
+                                placeholder="Or enter image URL..."
+                                className="w-full px-3 py-2 bg-dark-300/50 border border-primary-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 transition-all text-sm"
+                              />
+                            </div>
+
+                            {/* Shiny Evolution Image */}
+                            <div className="space-y-3">
+                              <label className="block text-sm font-medium text-gray-400">Shiny Image</label>
+                              
+                              {/* Image Preview */}
+                              {evolution.shinyImage && (
+                                <div className="relative group">
+                                  <img
+                                    src={evolution.shinyImage}
+                                    alt="Shiny evolution preview"
+                                    className="w-full h-32 object-cover rounded-lg border border-primary-500/20"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none'
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
+                                    <span className="text-white text-xs">Preview</span>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* Upload Button */}
+                              <button
+                                type="button"
+                                onClick={() => triggerEvolutionImageUpload(evoIndex, 'shiny')}
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-yellow-500/80 to-yellow-600/80 hover:from-yellow-600 hover:to-yellow-700 text-white rounded-lg transition-all duration-200 hover:scale-105 text-sm"
+                              >
+                                <Upload className="h-3 w-3" />
+                                Upload Shiny
+                              </button>
+                              
+                              {/* URL Input */}
+                              <input
+                                type="text"
+                                value={evolution.shinyImage || ''}
+                                onChange={(e) => updateEvolution(evoIndex, 'shinyImage', e.target.value)}
+                                placeholder="Or enter shiny image URL..."
+                                className="w-full px-3 py-2 bg-dark-300/50 border border-primary-500/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-400/20 transition-all text-sm"
+                              />
+                            </div>
+                          </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1759,23 +2062,23 @@ const AdminPanel = () => {
               </div>
             </div>
           </motion.div>
-        ) : (
+        ) : activeTab === 'manage' ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="space-y-6"
+            className="space-y-8"
           >
-            {/* Management Header */}
+            {/* Manage Units Header */}
             <div className="bg-gradient-to-r from-dark-100 to-dark-200 rounded-2xl p-6 border border-primary-500/20 shadow-xl">
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-xl flex items-center justify-center">
                     <Users className="h-6 w-6 text-white" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-game font-bold text-white">
-                      Unit Management
+                      Manage Units
                     </h2>
                     <p className="text-gray-400">
                       {units.length} total units • {units.filter(u => u.isBaseForm).length} base forms
@@ -1949,7 +2252,127 @@ const AdminPanel = () => {
               )}
             </div>
           </motion.div>
-        )}
+        ) : activeTab === 'database' ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="space-y-8"
+          >
+            {/* Database Header */}
+            <div className="bg-gradient-to-r from-dark-100 to-dark-200 rounded-2xl p-6 border border-primary-500/20 shadow-xl">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 bg-gradient-to-r from-primary-500 to-secondary-500 rounded-xl flex items-center justify-center">
+                  <Shield className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-game font-bold text-white">
+                    Database Management
+                  </h2>
+                  <p className="text-gray-400">
+                    Sync and manage units between local database and MongoDB
+                  </p>
+                </div>
+              </div>
+
+              {/* Database Status */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div className="bg-dark-200/30 rounded-xl p-4 border border-primary-500/10">
+                  <h3 className="text-lg font-semibold text-white mb-2">Current Units</h3>
+                  <p className="text-gray-300 text-sm mb-2">Units currently loaded from MongoDB</p>
+                  <div className="text-2xl font-bold text-primary-400">{units.length} units</div>
+                </div>
+                <div className="bg-dark-200/30 rounded-xl p-4 border border-primary-500/10">
+                  <h3 className="text-lg font-semibold text-white mb-2">MongoDB Status</h3>
+                  <p className="text-gray-300 text-sm mb-2">
+                    {isLoading ? 'Loading...' : error ? 'Connection error' : 'Connected and ready'}
+                  </p>
+                  <div className={`text-2xl font-bold ${error ? 'text-red-400' : 'text-green-400'}`}>
+                    {isLoading ? '...' : error ? 'Error' : 'Ready'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Error Display */}
+              {error && (
+                <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4 mb-6">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-5 w-5 text-red-400" />
+                    <h4 className="font-semibold text-red-200">Database Error</h4>
+                  </div>
+                  <p className="text-red-300 text-sm">{error}</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4">
+
+                <button
+                  onClick={async () => {
+                    try {
+                      await refreshFromMongoDB()
+                      showToast('Successfully refreshed units from MongoDB!', 'success')
+                    } catch (err) {
+                      showToast('Failed to refresh units from MongoDB', 'error')
+                    }
+                  }}
+                  disabled={isLoading}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 text-white rounded-lg font-medium transition-all duration-200 hover:scale-105 disabled:hover:scale-100 shadow-lg"
+                >
+                  {isLoading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Download className="h-5 w-5" />
+                  )}
+                  Refresh from MongoDB
+                </button>
+
+                <button
+                  onClick={() => {
+                    setConfirmationModal({
+                      isOpen: true,
+                      title: 'Reset to Local Database',
+                      message: 'This will replace current units with the local database. Are you sure?',
+                      onConfirm: () => {
+                        resetToDefault()
+                        showToast('Reset to local database successfully!', 'warning')
+                      }
+                    })
+                  }}
+                  disabled={isLoading}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 disabled:from-gray-600 disabled:to-gray-700 text-white rounded-lg font-medium transition-all duration-200 hover:scale-105 disabled:hover:scale-100 shadow-lg"
+                >
+                  <RotateCcw className="h-5 w-5" />
+                  Reset to Local
+                </button>
+              </div>
+            </div>
+
+            {/* Database Management Guide */}
+            <div className="bg-gradient-to-r from-dark-100 to-dark-200 rounded-2xl p-6 border border-primary-500/20 shadow-xl">
+              <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-blue-400" />
+                Database Management Guide
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <Download className="h-6 w-6 text-blue-400" />
+                  </div>
+                  <h4 className="font-semibold text-white mb-2">Refresh from MongoDB</h4>
+                  <p className="text-gray-400 text-sm">Load the latest units from MongoDB database. Use this to sync any changes made externally or to reload data.</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center mx-auto mb-3">
+                    <RotateCcw className="h-6 w-6 text-orange-400" />
+                  </div>
+                  <h4 className="font-semibold text-white mb-2">Reset Database</h4>
+                  <p className="text-gray-400 text-sm">Refresh the current units from MongoDB. This will reload all units from the database.</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : null}
       </div>
 
              {/* Confirmation Modal */}

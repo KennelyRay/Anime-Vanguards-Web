@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { User, Mail, Lock, Camera, Save, Eye, EyeOff, ArrowLeft, Shield, Calendar, LogOut } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
+import { apiService } from '../services/api'
 
 interface UserType {
   id: string
   username: string
-  password: string
   email?: string
   createdAt: string
   isAdmin: boolean
   profilePicture?: string
+  lastLogin?: string
 }
 
 const Profile = () => {
@@ -35,21 +36,20 @@ const Profile = () => {
   const [activeSection, setActiveSection] = useState<'basic' | 'security' | 'picture'>('basic')
 
   useEffect(() => {
-    // Get current user from localStorage
-    const userJson = localStorage.getItem('currentUser')
-    if (userJson) {
-      try {
-        const user = JSON.parse(userJson)
-        setCurrentUser(user)
-        setUsername(user.username)
-        setEmail(user.email || '')
-        setProfilePicture(user.profilePicture || '')
-      } catch (error) {
-        console.error('Error parsing user data:', error)
-        navigate('/login')
-      }
+    // Check if user is authenticated
+    if (!apiService.isAuthenticated()) {
+      navigate('/login')
+      return
+    }
+
+    // Get current user data
+    const user = apiService.getCurrentUser()
+    if (user) {
+      setCurrentUser(user)
+      setUsername(user.username)
+      setEmail(user.email || '')
+      setProfilePicture(user.profilePicture || '')
     } else {
-      // No user logged in, redirect to login
       navigate('/login')
     }
   }, [navigate])
@@ -62,27 +62,20 @@ const Profile = () => {
     setSuccess('')
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      // In a real app, this would be an API call
-      const updatedUser = {
-        ...currentUser,
+      const response = await apiService.updateProfile({
         username: username.trim(),
         email: email.trim() || undefined,
         profilePicture: profilePicture.trim() || undefined
-      }
+      })
 
-      // Update localStorage
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser))
-      setCurrentUser(updatedUser)
+      setCurrentUser(response.user)
       
       // Dispatch custom event to notify other components
       window.dispatchEvent(new Event('userDataUpdated'))
       
       setSuccess('Profile updated successfully!')
     } catch (error) {
-      setError('Failed to update profile')
+      setError(error instanceof Error ? error.message : 'Failed to update profile')
     }
 
     setIsLoading(false)
@@ -101,12 +94,6 @@ const Profile = () => {
       return
     }
 
-    if (currentPassword !== currentUser.password) {
-      setError('Current password is incorrect')
-      setIsLoading(false)
-      return
-    }
-
     if (!newPassword || newPassword.length < 6) {
       setError('New password must be at least 6 characters')
       setIsLoading(false)
@@ -120,24 +107,17 @@ const Profile = () => {
     }
 
     try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      await apiService.changePassword({
+        currentPassword,
+        newPassword
+      })
 
-      // In a real app, this would be an API call
-      const updatedUser = {
-        ...currentUser,
-        password: newPassword
-      }
-
-      // Update localStorage
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser))
-      setCurrentUser(updatedUser)
       setCurrentPassword('')
       setNewPassword('')
       setConfirmPassword('')
       setSuccess('Password changed successfully!')
     } catch (error) {
-      setError('Failed to change password')
+      setError(error instanceof Error ? error.message : 'Failed to change password')
     }
 
     setIsLoading(false)
@@ -155,11 +135,15 @@ const Profile = () => {
     }
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('isAdmin')
-    localStorage.removeItem('currentUser')
-    navigate('/')
-    window.location.reload()
+  const handleLogout = async () => {
+    try {
+      await apiService.logout()
+    } catch (error) {
+      console.error('Logout error:', error)
+    } finally {
+      navigate('/')
+      window.dispatchEvent(new Event('userDataUpdated'))
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -550,3 +534,4 @@ const Profile = () => {
 }
 
 export default Profile
+ 

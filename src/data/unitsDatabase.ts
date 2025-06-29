@@ -1,4 +1,5 @@
 export interface UnitData {
+  mongoId?: string // MongoDB ID for API operations
   name: string
   tier: string
   element: string
@@ -49,6 +50,7 @@ export interface UnitData {
   }>
   traits?: string[]
   trivia?: string[]
+  featured?: boolean
 }
 
 export const unitsDatabase: UnitData[] = [

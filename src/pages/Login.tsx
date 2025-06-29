@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Lock, User, Eye, EyeOff, Shield, ArrowLeft, UserPlus, LogIn, Mail } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
-import { createUser, authenticateUser, userExists } from '../utils/userDatabase'
+import { apiService } from '../services/api'
 
 const Login = () => {
   const [isSignup, setIsSignup] = useState(false)
@@ -23,34 +23,24 @@ const Login = () => {
     setError('')
     setSuccess('')
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
     try {
-      const authResult = authenticateUser({ username, password })
+      const response = await apiService.login({ username, password })
       
-      if (authResult.success && authResult.user) {
-        if (authResult.user.isAdmin) {
-          localStorage.setItem('isAdmin', 'true')
-          localStorage.setItem('currentUser', JSON.stringify(authResult.user))
-          setSuccess('Admin login successful! Redirecting to admin panel...')
-          setTimeout(() => {
-            navigate('/admin')
-            window.location.reload() // Refresh to update navbar state
-          }, 1500)
-        } else {
-          localStorage.setItem('currentUser', JSON.stringify(authResult.user))
-          setSuccess('Login successful! Redirecting to home...')
-          setTimeout(() => {
-            navigate('/')
-            window.location.reload() // Refresh to update navbar state
-          }, 1500)
-        }
+      if (response.user.isAdmin) {
+        setSuccess('Admin login successful! Redirecting to admin panel...')
+        setTimeout(() => {
+          navigate('/admin')
+          window.dispatchEvent(new Event('userDataUpdated'))
+        }, 1500)
       } else {
-        setError(authResult.error || 'Login failed')
+        setSuccess('Login successful! Redirecting to home...')
+        setTimeout(() => {
+          navigate('/')
+          window.dispatchEvent(new Event('userDataUpdated'))
+        }, 1500)
       }
     } catch (error) {
-      setError('An unexpected error occurred')
+      setError(error instanceof Error ? error.message : 'Login failed')
     }
     
     setIsLoading(false)
@@ -68,28 +58,21 @@ const Login = () => {
       return
     }
 
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
     try {
-      const createResult = createUser({ 
+      await apiService.register({ 
         username, 
         password, 
         email: email || undefined 
       })
       
-      if (createResult.success) {
-        setSuccess('Account created successfully! You can now login with your credentials.')
-        setIsSignup(false)
-        setUsername('')
-        setEmail('')
-        setPassword('')
-        setConfirmPassword('')
-      } else {
-        setError(createResult.error || 'Failed to create account')
-      }
+      setSuccess('Account created successfully! You can now login with your credentials.')
+      setIsSignup(false)
+      setUsername('')
+      setEmail('')
+      setPassword('')
+      setConfirmPassword('')
     } catch (error) {
-      setError('An unexpected error occurred')
+      setError(error instanceof Error ? error.message : 'Failed to create account')
     }
     
     setIsLoading(false)

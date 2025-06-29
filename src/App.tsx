@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState } from 'react'
+import React, { createContext, useContext, useState, useEffect } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { UnitsProvider } from './contexts/UnitsContext'
+import { initializeMigration } from './utils/migration'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import Home from './pages/Home'
@@ -150,6 +151,11 @@ const AppContent = () => {
 }
 
 function App() {
+  useEffect(() => {
+    // Initialize migration from localStorage to MongoDB on app startup
+    initializeMigration().catch(console.error)
+  }, [])
+
   return (
     <ErrorBoundary>
       <UnitsProvider>

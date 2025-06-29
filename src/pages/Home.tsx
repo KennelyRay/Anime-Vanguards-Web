@@ -66,20 +66,7 @@ const Home = () => {
   }
 
   // Get featured units from database
-  const featuredUnitNames = [
-    'Koguro (Unsealed)',
-    'Song Jinwu and Igros', 
-    'Divalo (Requiem)',
-    'Arc (True Ancestor)',
-    'Slime (King)',
-    'Valentine (Love Train)',
-    'Gujo (Infinity)',
-    'Super Vogito'
-  ]
-  
-  const featuredUnits = featuredUnitNames
-    .map(name => getUnitByName(name))
-    .filter((unit): unit is UnitData => unit !== undefined)
+  const featuredUnits = units.filter(unit => unit.featured)
 
   const latestUpdates = [
     {
